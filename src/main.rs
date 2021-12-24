@@ -1,4 +1,5 @@
-
+mod mongo;
+use mongo::DB;
 // A reddit scapper for getting insults from r/insults using reqwest and tokio async runtime
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -12,5 +13,7 @@ async fn main() -> Result<(), reqwest::Error> {
     .json()
     .await?;
     println!("{:#?}", response["data"]["children"][1]["data"]["title"]);
+    let client= DB::init().await;
+    println!("{:?}",client);
     Ok(())
 }
