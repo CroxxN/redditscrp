@@ -1,4 +1,5 @@
 use mongodb::{options::ClientOptions,Client};
+pub use mongodb::bson::{doc};
 use dotenv::dotenv;
 use std::env;
 #[derive(Debug)]
@@ -8,10 +9,10 @@ pub struct DB{
 impl DB {
     pub async fn init()-> mongodb::error::Result<Self>{
         dotenv().ok();
+
         let db_user = env::var("MONGO_DB_USER").unwrap();
-        let db_pass = env::var("MONG0_DB_PASSWORD").unwrap();
-        println!("{:?}",db_user);
-        let mut client_options = ClientOptions::parse("mongodb+srv://{}:{}@insults.l3jlv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+        let db_pass = env::var("MONGO_DB_PASS").unwrap();
+        let mut client_options = ClientOptions::parse(format!("mongodb+srv://{}:{}@insults.l3jlv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",db_user,db_pass))
         .await?;
         client_options.app_name = Some("insults".to_string());
         let client = Client::with_options(client_options)?;
@@ -22,10 +23,19 @@ impl DB {
         )
             
     }
-    pub async fn insert(&self)-> mongodb::error::Result<u64>{
-        let insult_collection: mongodb::Collection<String> = self.client.database("insults").collection("insults");
-        let collection_amount = insult_collection.count_documents(None, None)
+    pub async fn make_doc(insult: String)-> mongodb::error::Result<mongodb::bson::Document>{
+        let mut doc = mongodb::bson::Document::new();
+        doc.insert("insult", insult);
+        Ok(doc)
+    }
+
+    pub async fn insert(&self, insult_insert: mongodb::bson::Document)-> mongodb::error::Result<Option<(String, mongodb::bson::Bson)>>{
+        let insult_collection = self.client.database("insults").collection("insults");
+        
+        insult_collection.insert_many(insult_insert.clone(), None)
         .await?;
-        Ok(collection_amount)
+        let doc = insult_collection.find_one(
+            doc!("content":"this"),None).await?;
+        Ok(doc)
     }
 }
