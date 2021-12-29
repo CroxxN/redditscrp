@@ -1,7 +1,9 @@
 use mongodb::{options::ClientOptions,Client};
-pub use mongodb::bson::{doc};
+pub use mongodb::bson::{doc,Bson};
 use dotenv::dotenv;
 use std::env;
+
+
 #[derive(Debug)]
 pub struct DB{
     pub client: Client,
@@ -23,19 +25,13 @@ impl DB {
         )
             
     }
-    pub async fn make_doc(insult: String)-> mongodb::error::Result<mongodb::bson::Document>{
-        let mut doc = mongodb::bson::Document::new();
-        doc.insert("insult", insult);
-        Ok(doc)
-    }
 
-    pub async fn insert(&self, insult_insert: mongodb::bson::Document)-> mongodb::error::Result<Option<(String, mongodb::bson::Bson)>>{
+    pub async fn insert(&self, insult_insert: Vec<mongodb::bson::Document>)-> mongodb::error::Result<()> {
         let insult_collection = self.client.database("insults").collection("insults");
         
         insult_collection.insert_many(insult_insert.clone(), None)
         .await?;
-        let doc = insult_collection.find_one(
-            doc!("content":"this"),None).await?;
-        Ok(doc)
+        
+        Ok(())
     }
 }

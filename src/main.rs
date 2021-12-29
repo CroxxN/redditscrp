@@ -1,7 +1,13 @@
 mod mongo;
-use crate::mongo::{DB};
+use crate::mongo::{DB,doc};
+use serde::{Serialize, Deserialize};
 
 // A reddit scapper for getting insults from r/insults using reqwest and tokio async runtime
+#[derive(Serialize, Deserialize, Debug)]
+struct DocFormat{
+    title: String,
+    content: String,
+}
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
     let client = reqwest::Client::new(); //Creates a reqwest client
@@ -13,19 +19,33 @@ async fn main() -> Result<(), reqwest::Error> {
     .await?
     .json()
     .await?;
-    let result_doc;
+    let mut resp_insults: Vec<String> = Vec::new();
     for i in 0..200 {
-        let response_formatted = response["data"]["children"][i]["data"]["title"].to_string();
-        let result_doc = DB::make_doc(response_formatted);
+        
+        let resp = response.as_object().map(|map_res|{map_res["data"]["children"][i]["data"]["title"].to_string()});
+        match resp {
+            Some(resp)=> {resp_insults.push(resp);}
+            None => {println!("Error");}
+        };
+        
+        
     };
-    match mongo(result_doc).await {
-        Ok(resp)=> println!("{:?}",resp),
-        Err(error) => println!("{}",error)
+    let mut all_insult:Vec<mongodb::bson::Document> = Vec::new();
+    for items in resp_insults {
+        let doc_resp = doc!{
+            "title": "insult",
+            "content": items,
+        };
+        all_insult.push(doc_resp);
+    };
+    match mongo(all_insult).await {
+        Ok(())=> println!("Susscess"),
+        Err(_e) => println!("Error"),
     };
     Ok(())
 }
-async fn mongo(insult: mongodb::bson::Document)->mongodb::error::Result<Option<(String,mongodb::bson::Bson)>>{
+async fn mongo(insult: Vec<mongodb::bson::Document>)->mongodb::error::Result<()>{
     let client= DB::init().await?;
-    let response = client.insert(insult).await?;
-    Ok(response)
+    client.insert(insult).await?;
+    Ok(())
 }
