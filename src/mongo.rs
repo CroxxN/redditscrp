@@ -8,6 +8,7 @@ use std::env;
 pub struct DB{
     pub client: Client,
 }
+
 impl DB {
     pub async fn init()-> mongodb::error::Result<Self>{
         dotenv().ok();

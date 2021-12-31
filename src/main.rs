@@ -8,6 +8,7 @@ struct DocFormat{
     title: String,
     content: String,
 }
+
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
     let client = reqwest::Client::new(); //Creates a reqwest client
@@ -39,12 +40,13 @@ async fn main() -> Result<(), reqwest::Error> {
         all_insult.push(doc_resp);
     };
     match mongo(all_insult).await {
-        Ok(())=> println!("Susscess"),
+        Ok(())=> println!("Sucess"),
         Err(_e) => println!("Error"),
     };
     Ok(())
 }
-async fn mongo(insult: Vec<mongodb::bson::Document>)->mongodb::error::Result<()>{
+
+async fn mongo(insult: Vec<mongodb::bson::Document>)-> mongodb::error::Result<()>{
     let client= DB::init().await?;
     client.insert(insult).await?;
     Ok(())
